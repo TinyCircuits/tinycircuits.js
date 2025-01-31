@@ -1,5 +1,5 @@
 class Pyboard{
-    constructor(){
-        
+    constructor(serial){
+        this.serial = serial;
     }
 }

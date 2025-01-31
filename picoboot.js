@@ -15,9 +15,16 @@ export const PICOBOOT_EXCLUSIVE_MODES = {
 class Picoboot{
     constructor(){
         this.device = null;
-        this.token = 0;     // Increments for every request/built command packet
         this.sectorSize = 4096;
         this.pageSize = 256;
+        this.#init();
+    }
+
+
+    // Simply resets some runtime state
+    #init(){
+        this.EPNums = {"out": -1, "in": -1};
+        this.token = 0;     // Increments for every request/built command packet
     }
 
 
@@ -41,10 +48,10 @@ class Picoboot{
 
     // Sends packet and waits for reply
     async #sendPacket(packet){
-        await this.device.transferOut(3, new Uint8Array(packet));   // Send on BULK_OUT
+        await this.device.transferOut(this.EPNums["out"], new Uint8Array(packet));   // Send on BULK_OUT
 
         // Wait for empty IN packet and check status
-        let inPacket = await this.device.transferIn(4, 64);
+        let inPacket = await this.device.transferIn(this.EPNums["in"], 64);
         if(inPacket.status != "ok"){
             // console.error("Could not claim exclusive...");
             throw new Error("Could not claim exclusive access...");
@@ -54,22 +61,98 @@ class Picoboot{
     }
 
 
+    // Checks for correct number of configurations from USB device and selects it, returns configuration
+    async #selectConfiguration(){
+        // Only expect 1 configuration, throw error otherwise (datasheets don't
+        // mention this part, assume only single configuration devices will work).
+        // Select 
+        if(this.device.configurations.length != 1){
+            throw new Error("picoboot.js: ERROR: Expected a single USBConfiguration, got " + this.device.configurations.length);
+        }
+        
+        // Get the configuration number from the configuration for selection, then select it
+        // https://developer.mozilla.org/en-US/docs/Web/API/USBDevice/configuration#examples
+        const configuration      = this.device.configurations[0];
+        const configurationValue = configuration.configurationValue;
+        await this.device.selectConfiguration(configurationValue);
+
+        return configuration;
+    }
+
+
+    // Checks all interfaces for descriptor matching PICOBOOT, claims them, and returns endpoints
+    async #claimInterface(configuration){
+        // Datasheet says PICOBOOT interface needs to be identified and do not use hard-coded
+        // indices:
+        // * https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf?#page=403
+        // * https://datasheets.raspberrypi.com/rp2040/rp2040-datasheet.pdf?#page=146
+        const interfaces    = configuration.interfaces;
+        let interfaceNumber = null;
+        let endpoints       = null;
+
+        for(let ix=0; (ix<interfaces.length && interfaceNumber === null); ix++){
+            const alternates = interfaces[ix].alternates;
+
+            for(let iax=0; iax<alternates.length; iax++){
+                const alternate = alternates[iax];
+
+                if( alternate.endpoints.length  == 2    &&
+                    alternate.alternateSetting  == 0    &&
+                    alternate.interfaceClass    == 0xff &&
+                    alternate.interfaceSubclass == 0    &&
+                    alternate.interfaceProtocol == 0
+                ){
+                    interfaceNumber = interfaces[ix].interfaceNumber;
+                    endpoints       = alternate.endpoints;
+                    break;
+                }
+            }
+        }
+
+        if(interfaceNumber === null){
+            throw new Error("picoboot.js: ERROR: Could not find interface that matches RP2040/RP2350 device!");
+        }
+
+        // Select configuration and claim interface
+        await this.device.claimInterface(interfaceNumber);
+
+        return endpoints;
+    }
+
+
+    // Given some endpoints, sorts in from out and stores in class for later use
+    async #sortEndpoints(endpoints){
+        console.log(endpoints);
+        endpoints.forEach(endpoint => {
+            if(endpoint.type != "bulk"){
+                throw new Error("picoboot.js: Expected all endpoints to have type 'bulk', found one with type '" + endpoint.type +"'");
+            }
+
+            // Store the endpoint number under either 'out' or 'in' keys
+            this.EPNums[endpoint.direction] = endpoint.endpointNumber;
+        });
+    }
+
+
     // Connect to a USB device
     async connect(filters){
+        // Step #1: Disconnect before reconnecting
+        if(this.device !== null){
+            this.disconnect();
+        }
+
+        // Reset runtime state variables
+        this.#init();
+
+        // Step #2: Ask suer to select device and then attempt to connect
         this.device = await navigator.usb.requestDevice({ filters});    // Ask user to select
         await this.device.open();                                       // Try to connect
 
-        // https://developer.mozilla.org/en-US/docs/Web/API/USBDevice/configuration#examples
-        // Test if config already exists, if not, select
-        if(this.device.configuration === null){
-            await device.selectConfiguration(1);
-        }
-
-        // Claim interface
-        await this.device.claimInterface(1);
-
-        // Reset this on every connection
-        this.token = 0;
+        // Step #3: Select and check configuration from device, find
+        // matching interface, and sort in/out endpoints
+        const configuration = await this.#selectConfiguration();
+        const endpoints     = await this.#claimInterface(configuration);
+        await this.#sortEndpoints(endpoints);
     }
 
 
