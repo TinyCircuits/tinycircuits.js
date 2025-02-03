@@ -9,7 +9,7 @@ export default class Picotool{
 
     // https://github.com/raspberrypi/picotool?tab=readme-ov-file#load
     // Loads the uf2 data into respective flash locations
-    async load(uf2Data){
+    async load(uf2Data, progressCB){
         // Connect
         await this.picoboot.connect([{vendorId: 0x2E8A, productId: 0x0003}, {vendorId: 0x2E8A, productId: 0x000F}]);
 
@@ -58,10 +58,12 @@ export default class Picotool{
             // Erase sector containing where data will be written
             // if not already tracked as erased
             if(!erased(blockDataAddr)){
-                this.picoboot.flashEraseSector(blockDataAddr);
+                await this.picoboot.flashEraseSector(blockDataAddr);
             }
 
-            this.picoboot.flashWrite(blockDataAddr, blockDataSize, blockData);
+            await this.picoboot.flashWrite(blockDataAddr, blockDataSize, blockData);
+
+            if(progressCB) progressCB(i/blockCount);
         }
 
         // Figure out device type for correct reboot command, and then reboot
