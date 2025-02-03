@@ -1,4 +1,4 @@
-import { Picoboot } from "/picoboot.js"
+import Picoboot from "/picoboot.js"
 import { log } from "/tests/utility.js";
 
 // Always log test name to console

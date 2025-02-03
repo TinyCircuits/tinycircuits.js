@@ -156,6 +156,20 @@ export default class Picoboot{
     }
 
 
+    // Returns a dict containing certain useful information
+    async info(){
+        if(this.device === null){
+            return;
+        }
+
+        return {
+            manufacturerName: this.device.manufacturerName,
+            productName:      this.device.productName,      // Contains "RP2" or "RP2350"
+            serialNumber:     this.serialNumber
+        };
+    }
+
+
     // Disconnect the connected device
     async disconnect(){
         if(this.device === null){
@@ -196,7 +210,7 @@ export default class Picoboot{
 
     // Reboot out of BOOTSEL, only for RP2040:
     // * https://datasheets.raspberrypi.com/rp2040/rp2040-datasheet.pdf?#page=148
-    async reboot_rp2040(){
+    async rebootRP2040(){
         if(this.device === null){
             return;
         }
@@ -218,7 +232,7 @@ export default class Picoboot{
     // Reboot out of BOOTSEL, only for RP2350:
     // * https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf?#page=406
     // * https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf?#page=395
-    async reboot_rp2350(){
+    async rebootRP2350(){
         if(this.device === null){
             return;
         }
@@ -234,7 +248,7 @@ export default class Picoboot{
     // XIP exit sequence (WireShark used this a lot)
     // * https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf?#page=405
     // * https://datasheets.raspberrypi.com/rp2040/rp2040-datasheet.pdf?#page=149
-    async exit_xip(){
+    async exitXIP(){
         if(this.device === null){
             return;
         }
