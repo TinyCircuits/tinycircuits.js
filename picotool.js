@@ -1,4 +1,4 @@
-import { Picoboot, PICOBOOT_EXCLUSIVE_MODES } from "./picoboot";
+import Picoboot, {PICOBOOT_EXCLUSIVE_MODES } from "./picoboot";
 
 // Basic implementation of https://github.com/raspberrypi/picotool
 // Only implemented functions needed
