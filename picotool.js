@@ -6,7 +6,7 @@ class Picotool{
     }
 
     // https://github.com/raspberrypi/picotool?tab=readme-ov-file#load
-    // Loads the binary to the start of flash (not very flexible implementation)
+    // Loads the uf2 data into respective flash locations
     async load(uf2Data){
         if(!this.picoboot.connected()){
             return;
