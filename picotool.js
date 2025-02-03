@@ -1,3 +1,5 @@
+import { Picoboot, PICOBOOT_EXCLUSIVE_MODES } from "./picoboot";
+
 // Basic implementation of https://github.com/raspberrypi/picotool
 // Only implemented functions needed
 class Picotool{
@@ -11,6 +13,13 @@ class Picotool{
         if(!this.picoboot.connected()){
             return;
         }
+
+        // Get exclusive access to the USB interface and make
+        // MSC file manager popup disappear
+        await this.picoboot.exclusive(PICOBOOT_EXCLUSIVE_MODES.EXCLUSIVE_AND_EJECT);
+
+        // Wireshark does this after every erase and write but it seems to work by just doing it once
+        await this.picoboot.exit_xip();
 
         // Used for storing and checking which sectors have
         // been erased. UF2 blocks can be in any order, need
