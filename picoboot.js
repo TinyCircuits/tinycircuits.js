@@ -138,14 +138,14 @@ export default class Picoboot{
     async connect(filters){
         // Step #1: Disconnect before reconnecting
         if(this.device !== null){
-            this.disconnect();
+            await this.disconnect();
         }
 
         // Reset runtime state variables
         this.#init();
 
         // Step #2: Ask suer to select device and then attempt to connect
-        this.device = await navigator.usb.requestDevice({ filters});    // Ask user to select
+        this.device = await navigator.usb.requestDevice({ filters });   // Ask user to select
         await this.device.open();                                       // Try to connect
 
         // Step #3: Select and check configuration from device, find
