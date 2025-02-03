@@ -12,7 +12,7 @@ export const PICOBOOT_EXCLUSIVE_MODES = {
 }
 
 
-class Picoboot{
+export default class Picoboot{
     constructor(){
         this.device = null;
         this.sectorSize = 4096;
@@ -298,8 +298,6 @@ class Picoboot{
         await this.#sendPacket(payload);
     }
 }
-
-export { Picoboot };
 
 
 // class Picoboot{

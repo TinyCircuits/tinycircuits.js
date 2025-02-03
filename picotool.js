@@ -2,7 +2,7 @@ import { Picoboot, PICOBOOT_EXCLUSIVE_MODES } from "./picoboot";
 
 // Basic implementation of https://github.com/raspberrypi/picotool
 // Only implemented functions needed
-class Picotool{
+export default class Picotool{
     constructor(picoboot){
         this.picoboot = picoboot;
     }
